@@ -1,0 +1,50 @@
+***** Hybrid Assembly *******
+
+# Step 1: Index the reference genome
+bwa index reference_campylobacter.fasta
+
+# Step 2: Align the reads to the reference genome
+bwa mem reference_campylobacter.fasta SRR27199327_1.fastq SRR27199327_2.fastq > bwa.bam
+
+# Step 3: Extract the mapped reads
+samtools view -b -F 4 -o mapped.bam bwa.bam
+
+# Step 4: Convert from bam to fastq file
+samtools bam2fq mapped.bam > mapped.fastq
+
+# Step 5: Split the fastq file
+awk 'NR%2==1 { print $0 "/1" } ; NR%2==0 { print substr($0,0,length($0)/2) }' mapped.fastq > mapped_1.fastq
+awk 'NR%2==1 { print $0 "/2" } ; NR%2==0 { print substr($0,length($0)/2+1) }' mapped.fastq > mapped_2.fastq
+
+# Step 6: Trim the fastq files
+TrimmomaticPE -threads 12 mapped_1.fastq mapped_2.fastq -baseout trimmomatic/mapped.fastq ILLUMINACLIP:NexteraPE-PE.fa:2:30:10:8:keepBothReads HEADCROP:15 SLIDINGWINDOW:4:25
+
+# Step 7: Perform de novo assembly using SPAdes with both short and long reads
+spades.py -1 mapped_1P.fastq -2 mapped_2P.fastq -o assembly_output
+De novo
+quality control check:
+
+sudo apt install fastqc
+mkdir fastqc_result
+fastqc -o fastqc_result -t 2 R*.fastq
+#cd fastqc_result
+#ls
+#open R_1_fastqc.html
+#open R_2_fastqc.html
+
+Trim the fastq file:
+mkdir trimmomatic
+#sudo apt install trimmomatic
+TrimmomaticPE -phred33 R_1.fastq R_2.fastq -baseout trimmomatic/R.fastq LEADING:15 TRAILING:15 SLIDINGWINDOW:4:25 MINLEN:36
+
+Genome assembly: 
+
+sudo apt install spades
+spades.py -1 SRR27199327_1P.fastq -2 SRR27199327_2P.fastq -o assembly_output
+
+Genome annotation: 
+
+conda create -n annotation -y
+conda activate annotation
+conda install bioconda/label/cf201901::prokka
+prokka --outdir final_prokka --genus 'Name' --strain 'name' reference_genome.fasta
