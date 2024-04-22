@@ -1,0 +1,27 @@
+******* Mapping assembly *******
+# Step 1: Quality control using FastQC
+fastqc -o output_dir SRR27199327_1P.fastq SRR27199327_2P.fastq
+
+# Step 2: Trimming using Trimmomatic
+trimmomatic PE -phred33 SRR27199327_1P.fastq SRR27199327_2P.fastq trimmed_R1.fastq unpaired_R1.fastq trimmed_R2.fastq unpaired_R2.fastq LEADING:20 TRAILING:20 SLIDINGWINDOW:4:30 MINLEN:36
+
+# Step 3: Quality control on trimmed data
+fastqc -o output_dir trimmed_R1.fastq trimmed_R2.fastq
+
+# Step 4: Index the reference genome (replace "reference.fasta" with your reference genome file)
+bwa index reference.fasta
+
+# Step 5: Align with the reference genome using BWA
+bwa mem -t 4 reference.fasta trimmed_R1.fastq trimmed_R2.fastq > aligned.sam
+
+# Step 6: Convert SAM to BAM
+samtools view -bS aligned.sam > aligned.bam
+
+# Step 7: Sort the BAM file
+samtools sort -o sorted.bam aligned.bam
+
+# Step 8: Index the sorted BAM file
+samtools index sorted.bam
+
+# Step 9: Get the assembled genome without variant calling
+samtools fasta -o final_assembly.fasta sorted.bam
