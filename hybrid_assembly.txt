@@ -21,30 +21,4 @@ TrimmomaticPE -threads 12 mapped_1.fastq mapped_2.fastq -baseout trimmomatic/map
 
 # Step 7: Perform de novo assembly using SPAdes with both short and long reads
 spades.py -1 mapped_1P.fastq -2 mapped_2P.fastq -o assembly_output
-De novo
-quality control check:
 
-sudo apt install fastqc
-mkdir fastqc_result
-fastqc -o fastqc_result -t 2 R*.fastq
-#cd fastqc_result
-#ls
-#open R_1_fastqc.html
-#open R_2_fastqc.html
-
-Trim the fastq file:
-mkdir trimmomatic
-#sudo apt install trimmomatic
-TrimmomaticPE -phred33 R_1.fastq R_2.fastq -baseout trimmomatic/R.fastq LEADING:15 TRAILING:15 SLIDINGWINDOW:4:25 MINLEN:36
-
-Genome assembly: 
-
-sudo apt install spades
-spades.py -1 SRR27199327_1P.fastq -2 SRR27199327_2P.fastq -o assembly_output
-
-Genome annotation: 
-
-conda create -n annotation -y
-conda activate annotation
-conda install bioconda/label/cf201901::prokka
-prokka --outdir final_prokka --genus 'Name' --strain 'name' reference_genome.fasta
